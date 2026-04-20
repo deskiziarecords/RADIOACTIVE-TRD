@@ -1,0 +1,14 @@
+C:\Users\Roberto\Documents\RADIOACTIVE-TRD\target\release\deps\serde-7768f38bee89cedf.d: C:\Users\Roberto\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\lib.rs C:\Users\Roberto\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\integer128.rs C:\Users\Roberto\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\mod.rs C:\Users\Roberto\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\de.rs C:\Users\Roberto\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\ser.rs C:\Users\Roberto\Documents\RADIOACTIVE-TRD\target\release\build\serde-cf39a1f6442d61c3\out/private.rs
+
+C:\Users\Roberto\Documents\RADIOACTIVE-TRD\target\release\deps\libserde-7768f38bee89cedf.rlib: C:\Users\Roberto\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\lib.rs C:\Users\Roberto\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\integer128.rs C:\Users\Roberto\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\mod.rs C:\Users\Roberto\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\de.rs C:\Users\Roberto\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\ser.rs C:\Users\Roberto\Documents\RADIOACTIVE-TRD\target\release\build\serde-cf39a1f6442d61c3\out/private.rs
+
+C:\Users\Roberto\Documents\RADIOACTIVE-TRD\target\release\deps\libserde-7768f38bee89cedf.rmeta: C:\Users\Roberto\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\lib.rs C:\Users\Roberto\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\integer128.rs C:\Users\Roberto\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\mod.rs C:\Users\Roberto\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\de.rs C:\Users\Roberto\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\ser.rs C:\Users\Roberto\Documents\RADIOACTIVE-TRD\target\release\build\serde-cf39a1f6442d61c3\out/private.rs
+
+C:\Users\Roberto\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\lib.rs:
+C:\Users\Roberto\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\integer128.rs:
+C:\Users\Roberto\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\mod.rs:
+C:\Users\Roberto\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\de.rs:
+C:\Users\Roberto\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\ser.rs:
+C:\Users\Roberto\Documents\RADIOACTIVE-TRD\target\release\build\serde-cf39a1f6442d61c3\out/private.rs:
+
+# env-dep:OUT_DIR=C:\\Users\\Roberto\\Documents\\RADIOACTIVE-TRD\\target\\release\\build\\serde-cf39a1f6442d61c3\\out

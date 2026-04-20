@@ -1,0 +1,985 @@
+{
+  "total": 163,
+  "start_date": "2025-11-25T20:01:41.063108+00:00",
+  "history": [
+    {
+      "iteration": 1,
+      "timestamp": "2025-11-25T20:01:41.063131+00:00",
+      "env": "Colab",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 2,
+      "timestamp": "2025-11-25T20:05:24.133506+00:00",
+      "env": "Colab",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 3,
+      "timestamp": "2025-11-25T20:15:54.605677+00:00",
+      "env": "Colab",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 4,
+      "timestamp": "2025-11-25T20:29:44.083510+00:00",
+      "env": "Colab",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 5,
+      "timestamp": "2025-11-26T23:15:26.749585+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 6,
+      "timestamp": "2025-11-26T23:22:29.628232+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 7,
+      "timestamp": "2025-11-27T01:08:05.990534+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 8,
+      "timestamp": "2025-11-27T03:07:29.399463+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 9,
+      "timestamp": "2025-11-27T04:16:29.157425+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 10,
+      "timestamp": "2025-11-27T04:44:54.595056+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 11,
+      "timestamp": "2025-11-27T05:12:28.832828+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 12,
+      "timestamp": "2025-11-27T19:59:18.245124+00:00",
+      "env": "Colab",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 13,
+      "timestamp": "2025-11-27T20:17:30.321563+00:00",
+      "env": "Colab",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 14,
+      "timestamp": "2025-11-27T20:35:05.372479+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 15,
+      "timestamp": "2025-11-27T22:15:31.044353+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 16,
+      "timestamp": "2025-11-27T22:40:01.623161+00:00",
+      "env": "Colab",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 17,
+      "timestamp": "2025-11-28T00:04:36.684215+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 18,
+      "timestamp": "2025-11-28T02:03:34.897315+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 19,
+      "timestamp": "2025-11-28T04:03:26.639043+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 20,
+      "timestamp": "2025-11-28T06:03:40.505985+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 21,
+      "timestamp": "2025-11-28T08:03:51.618665+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 22,
+      "timestamp": "2025-11-28T10:03:26.872961+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 23,
+      "timestamp": "2025-11-28T12:03:28.966398+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 24,
+      "timestamp": "2025-11-28T23:17:24.184035+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 25,
+      "timestamp": "2025-11-29T01:28:03.753458+00:00",
+      "env": "Colab",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 26,
+      "timestamp": "2025-11-29T01:31:13.771182+00:00",
+      "env": "Colab",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 27,
+      "timestamp": "2025-11-29T01:41:02.461532+00:00",
+      "env": "Colab",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 28,
+      "timestamp": "2025-11-29T01:48:45.967590+00:00",
+      "env": "Colab",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 29,
+      "timestamp": "2025-11-29T05:42:02.197371+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 30,
+      "timestamp": "2025-11-29T06:04:08.604551+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 31,
+      "timestamp": "2025-11-29T06:49:14.804411+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 32,
+      "timestamp": "2025-11-29T07:03:55.687304+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 33,
+      "timestamp": "2025-11-29T07:35:57.981898+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 34,
+      "timestamp": "2025-11-29T08:04:10.221060+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 35,
+      "timestamp": "2025-11-29T08:45:43.649170+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 36,
+      "timestamp": "2025-11-29T09:03:58.033486+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 37,
+      "timestamp": "2025-11-29T09:38:21.017684+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 38,
+      "timestamp": "2025-11-29T10:04:05.666407+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 39,
+      "timestamp": "2025-11-29T10:42:10.546030+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 40,
+      "timestamp": "2025-11-29T11:03:56.743683+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 41,
+      "timestamp": "2025-11-29T11:33:21.827208+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 42,
+      "timestamp": "2025-11-29T12:04:14.543246+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 43,
+      "timestamp": "2025-11-29T13:02:47.469673+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 44,
+      "timestamp": "2025-11-29T13:28:32.490865+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 45,
+      "timestamp": "2025-11-29T13:43:12.189766+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 46,
+      "timestamp": "2025-11-29T14:04:13.024354+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 47,
+      "timestamp": "2025-11-29T14:40:14.042655+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 48,
+      "timestamp": "2025-11-29T15:04:01.068350+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 49,
+      "timestamp": "2025-11-29T15:37:45.972620+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 50,
+      "timestamp": "2025-11-29T16:04:03.236994+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 51,
+      "timestamp": "2025-11-29T16:45:17.812616+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 52,
+      "timestamp": "2025-11-29T17:04:02.875120+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 53,
+      "timestamp": "2025-11-29T17:38:02.823925+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 54,
+      "timestamp": "2025-11-29T18:04:00.052250+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 55,
+      "timestamp": "2025-11-29T18:47:16.296271+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 56,
+      "timestamp": "2025-11-29T19:04:03.516326+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 57,
+      "timestamp": "2025-11-29T19:33:50.075738+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 58,
+      "timestamp": "2025-11-29T20:04:06.715480+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 59,
+      "timestamp": "2025-11-29T20:40:52.224537+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 60,
+      "timestamp": "2025-11-29T21:04:00.430965+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 61,
+      "timestamp": "2025-11-29T23:31:58.499800+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 62,
+      "timestamp": "2025-11-30T00:01:49.880124+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 63,
+      "timestamp": "2025-11-30T01:53:50.705976+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 64,
+      "timestamp": "2025-11-30T03:22:55.162661+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 65,
+      "timestamp": "2025-11-30T04:30:38.727889+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 66,
+      "timestamp": "2025-11-30T05:18:30.239494+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 67,
+      "timestamp": "2025-11-30T06:20:50.149851+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 68,
+      "timestamp": "2025-11-30T09:17:45.611137+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 69,
+      "timestamp": "2025-11-30T09:47:29.245850+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 70,
+      "timestamp": "2025-11-30T10:03:47.029459+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 71,
+      "timestamp": "2025-11-30T12:03:26.130096+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 72,
+      "timestamp": "2025-11-30T14:03:28.272569+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 73,
+      "timestamp": "2025-11-30T16:03:30.780450+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 74,
+      "timestamp": "2025-11-30T18:03:36.616917+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 75,
+      "timestamp": "2025-12-01T00:04:38.565301+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 76,
+      "timestamp": "2025-12-01T02:03:38.605632+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 77,
+      "timestamp": "2025-12-01T04:03:39.086959+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 78,
+      "timestamp": "2025-12-01T06:03:38.522851+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 79,
+      "timestamp": "2025-12-01T08:04:01.102839+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 80,
+      "timestamp": "2025-12-01T10:03:43.215898+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 81,
+      "timestamp": "2025-12-01T12:03:40.958225+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 82,
+      "timestamp": "2025-12-01T14:03:38.087648+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 83,
+      "timestamp": "2025-12-01T16:03:31.012839+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 84,
+      "timestamp": "2025-12-01T18:03:44.140274+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 85,
+      "timestamp": "2025-12-02T00:04:46.489031+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 86,
+      "timestamp": "2025-12-02T01:17:42.112641+00:00",
+      "env": "Colab",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 87,
+      "timestamp": "2025-12-02T01:21:44.663361+00:00",
+      "env": "Colab",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 88,
+      "timestamp": "2025-12-02T02:03:40.175104+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 89,
+      "timestamp": "2025-12-02T04:03:43.082864+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 90,
+      "timestamp": "2025-12-02T06:03:47.845481+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 91,
+      "timestamp": "2025-12-02T08:03:44.749052+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 92,
+      "timestamp": "2025-12-02T10:03:36.650590+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 93,
+      "timestamp": "2025-12-02T12:03:40.094067+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 94,
+      "timestamp": "2025-12-02T14:03:42.889315+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 95,
+      "timestamp": "2025-12-02T16:03:40.004455+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 96,
+      "timestamp": "2025-12-02T18:03:43.723429+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 97,
+      "timestamp": "2025-12-03T00:04:33.364499+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 98,
+      "timestamp": "2025-12-03T02:03:23.855140+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 99,
+      "timestamp": "2025-12-03T04:03:27.295722+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 100,
+      "timestamp": "2025-12-03T06:03:38.351710+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 101,
+      "timestamp": "2025-12-03T08:03:44.772069+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 102,
+      "timestamp": "2025-12-03T10:03:34.707215+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 103,
+      "timestamp": "2025-12-03T12:03:43.650974+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 104,
+      "timestamp": "2025-12-03T14:03:41.292671+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 105,
+      "timestamp": "2025-12-03T16:03:50.647606+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 106,
+      "timestamp": "2025-12-03T18:03:37.282122+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 107,
+      "timestamp": "2025-12-03T22:42:46.054636+00:00",
+      "env": "Colab",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 108,
+      "timestamp": "2025-12-03T22:47:14.178348+00:00",
+      "env": "Colab",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 109,
+      "timestamp": "2025-12-03T22:50:50.143323+00:00",
+      "env": "Colab",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 110,
+      "timestamp": "2025-12-03T22:58:38.198956+00:00",
+      "env": "Colab",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 111,
+      "timestamp": "2025-12-04T00:04:39.844882+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 112,
+      "timestamp": "2025-12-04T02:03:54.689410+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 113,
+      "timestamp": "2025-12-04T04:03:34.158365+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 114,
+      "timestamp": "2025-12-04T06:03:41.687589+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 115,
+      "timestamp": "2025-12-04T08:04:15.883685+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 116,
+      "timestamp": "2025-12-04T10:03:35.884249+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 117,
+      "timestamp": "2025-12-04T12:03:41.422885+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 118,
+      "timestamp": "2025-12-04T14:03:47.347416+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 119,
+      "timestamp": "2025-12-04T16:03:50.202580+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 120,
+      "timestamp": "2025-12-04T18:03:39.846096+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 121,
+      "timestamp": "2025-12-05T00:04:36.641855+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 122,
+      "timestamp": "2025-12-05T02:03:25.423039+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 123,
+      "timestamp": "2025-12-05T04:03:37.046683+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 124,
+      "timestamp": "2025-12-05T06:03:41.583970+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 125,
+      "timestamp": "2025-12-05T08:03:45.317211+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 126,
+      "timestamp": "2025-12-05T10:03:31.314256+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 127,
+      "timestamp": "2025-12-05T12:03:29.788705+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 128,
+      "timestamp": "2025-12-05T14:03:36.400068+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 129,
+      "timestamp": "2025-12-05T16:03:40.862562+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 130,
+      "timestamp": "2025-12-05T18:07:29.585181+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 131,
+      "timestamp": "2025-12-06T00:03:41.926390+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 132,
+      "timestamp": "2025-12-06T02:03:27.229723+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 133,
+      "timestamp": "2025-12-06T04:03:30.320928+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 134,
+      "timestamp": "2025-12-06T06:03:34.541217+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 135,
+      "timestamp": "2025-12-06T08:03:39.924691+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 136,
+      "timestamp": "2025-12-06T10:03:37.565751+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 137,
+      "timestamp": "2025-12-06T12:03:35.533263+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 138,
+      "timestamp": "2025-12-06T14:03:28.046143+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 139,
+      "timestamp": "2025-12-06T16:03:29.454611+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 140,
+      "timestamp": "2025-12-06T18:03:30.448577+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 141,
+      "timestamp": "2025-12-07T00:03:40.161767+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 142,
+      "timestamp": "2025-12-07T02:03:27.000818+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 143,
+      "timestamp": "2025-12-07T04:03:40.967168+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 144,
+      "timestamp": "2025-12-07T06:03:53.255752+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 145,
+      "timestamp": "2025-12-07T08:03:54.942671+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 146,
+      "timestamp": "2025-12-07T10:03:36.879201+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 147,
+      "timestamp": "2025-12-07T12:03:33.071291+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 148,
+      "timestamp": "2025-12-07T14:03:37.376586+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 149,
+      "timestamp": "2025-12-07T16:03:35.196476+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 150,
+      "timestamp": "2025-12-07T18:03:34.654640+00:00",
+      "env": "GHA",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 151,
+      "timestamp": "2025-12-07T21:16:55.508050+00:00",
+      "env": "Colab",
+      "mode": "WEEKEND_LEARNING"
+    },
+    {
+      "iteration": 152,
+      "timestamp": "2025-12-08T00:04:30.404834+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 153,
+      "timestamp": "2025-12-08T02:03:52.939574+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 154,
+      "timestamp": "2025-12-08T04:03:30.079740+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 155,
+      "timestamp": "2025-12-08T06:03:37.518122+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 156,
+      "timestamp": "2025-12-08T08:03:51.428662+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 157,
+      "timestamp": "2025-12-08T10:03:40.766087+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 158,
+      "timestamp": "2025-12-08T12:03:51.190597+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 159,
+      "timestamp": "2025-12-08T14:03:41.042385+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 160,
+      "timestamp": "2025-12-08T16:03:42.522378+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 161,
+      "timestamp": "2025-12-08T18:04:06.628781+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 162,
+      "timestamp": "2025-12-09T00:04:41.496567+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    },
+    {
+      "iteration": 163,
+      "timestamp": "2025-12-09T02:03:52.072169+00:00",
+      "env": "GHA",
+      "mode": "LIVE_TRADING"
+    }
+  ],
+  "last_update": "2025-12-09T02:03:52.072158+00:00"
+}
