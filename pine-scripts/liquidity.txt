@@ -1,0 +1,326 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0
+// ─────────────────────────────────────────────────────────────────────────────
+//  LIQUIDITY POOLS · BSL / SSL
+//  Buy-Side & Sell-Side Liquidity | EQH · EQL | Sweep Detection
+//  Lookback: 106 bars (key parameter)
+// ─────────────────────────────────────────────────────────────────────────────
+//@version=5
+indicator("Liquidity Pools · BSL / SSL", "LIQ", overlay=true,
+     max_lines_count  = 500,
+     max_labels_count = 500,
+     max_boxes_count  = 200,
+     max_bars_back    = 4900)
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+//  ⚙️  INPUTS
+// ╚══════════════════════════════════════════════════════════════════════════╝
+G1 = "⚙️  Core Settings"
+G2 = "🔵  Buy-Side Liquidity (BSL)"
+G3 = "🔴  Sell-Side Liquidity (SSL)"
+G4 = "⚡  Sweep Settings"
+G5 = "📊  Info Panel"
+
+lookback   = input.int   (106,    "Lookback Length",              minval = 10, maxval = 500, group = G1,
+     tooltip = "Number of bars to look back for liquidity tracking. 106 is the key value.")
+swing_len  = input.int   (5,      "Swing Pivot Bars",             minval = 2,  maxval = 20,  group = G1,
+     tooltip = "Left/Right bars for pivot detection. Lower = more sensitive.")
+eq_pct     = input.float (0.030,  "EQH / EQL Tolerance %",       minval = 0.001, step = 0.005, group = G1,
+     tooltip = "Two levels within this % are considered Equal Highs or Equal Lows.")
+lbl_sz     = input.string(size.small, "Label Size",
+     options = [size.tiny, size.small, size.normal],              group = G1)
+ext_right  = input.int   (30,     "Line Extension (bars right)",  minval = 5,  maxval = 100, group = G1)
+
+show_bsl   = input.bool  (true,   "Show BSL Levels",              group = G2)
+bsl_col    = input.color (#00BFFF,"BSL Color",                    group = G2)
+
+show_ssl   = input.bool  (true,   "Show SSL Levels",              group = G3)
+ssl_col    = input.color (#FF4C6A,"SSL Color",                    group = G3)
+
+show_swept = input.bool  (true,   "Keep Swept Levels (faded)",    group = G4)
+hl_bar     = input.bool  (true,   "Highlight Sweep Candle",       group = G4)
+show_eqzone= input.bool  (true,   "Show EQH / EQL Zone Boxes",    group = G4)
+
+show_panel = input.bool  (true,   "Show Info Panel",              group = G5)
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+//  🎨  CONSTANTS
+// ╚══════════════════════════════════════════════════════════════════════════╝
+EQH_COL    = color.new(#FFD700, 0)
+SWEPT_FADE = 75
+ZONE_FADE  = 88
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+//  📦  ARRAYS — BSL
+// ╚══════════════════════════════════════════════════════════════════════════╝
+var float[] bp = array.new_float()
+var int[]   bi = array.new_int()
+var bool[]  ba = array.new_bool()
+var bool[]  be = array.new_bool()
+var line[]  bl = array.new_line()
+var label[] bL = array.new_label()
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+//  📦  ARRAYS — SSL
+// ╚══════════════════════════════════════════════════════════════════════════╝
+var float[] sp = array.new_float()
+var int[]   si = array.new_int()
+var bool[]  sa = array.new_bool()
+var bool[]  se = array.new_bool()
+var line[]  sl = array.new_line()
+var label[] sL = array.new_label()
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+//  🔧  HELPER
+// ╚══════════════════════════════════════════════════════════════════════════╝
+f_near(float a, float b) =>
+    math.abs(a - b) / ((a + b) * 0.5) * 100 <= eq_pct
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+//  📍  PIVOTS
+// ╚══════════════════════════════════════════════════════════════════════════╝
+ph = ta.pivothigh(high, swing_len, swing_len)
+pl = ta.pivotlow (low,  swing_len, swing_len)
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+//  ⬆️  REGISTER BSL
+// ╚══════════════════════════════════════════════════════════════════════════╝
+if show_bsl and not na(ph)
+    ph_bi = bar_index - swing_len
+
+    bool is_eqh      = false
+    int  eqh_match_i = -1
+    if array.size(bp) > 0
+        for i = 0 to array.size(bp) - 1
+            if array.get(ba, i) and f_near(array.get(bp, i), ph)
+                is_eqh      := true
+                eqh_match_i := i
+                break
+
+    lvl_col = is_eqh ? EQH_COL : color.new(bsl_col, 0)
+    lw      = is_eqh ? 2       : 1
+    ls      = is_eqh ? line.style_solid : line.style_dotted
+    txt     = is_eqh ? "EQH · BSL" : "BSL"
+
+    if is_eqh and eqh_match_i >= 0
+        label.set_text     (array.get(bL, eqh_match_i), "EQH · BSL")
+        label.set_textcolor(array.get(bL, eqh_match_i), EQH_COL)
+        label.set_x        (array.get(bL, eqh_match_i), bar_index + ext_right)
+        line.set_color     (array.get(bl, eqh_match_i), EQH_COL)
+        line.set_width     (array.get(bl, eqh_match_i), 2)
+        line.set_style     (array.get(bl, eqh_match_i), line.style_solid)
+
+        if show_eqzone
+            match_bi = array.get(bi, eqh_match_i)
+            match_px = array.get(bp, eqh_match_i)
+            top_z    = math.max(match_px, ph) + syminfo.mintick * 3
+            bot_z    = math.min(match_px, ph) - syminfo.mintick * 3
+            box.new(match_bi, top_z, bar_index + ext_right, bot_z,
+                 bgcolor      = color.new(#FFD700, ZONE_FADE),
+                 border_color = color.new(#FFD700, 40),
+                 border_width = 1)
+
+    array.push(bp, ph)
+    array.push(bi, ph_bi)
+    array.push(ba, true)
+    array.push(be, is_eqh)
+    array.push(bl, line.new(ph_bi, ph, bar_index + ext_right, ph,
+         color = lvl_col, width = lw, style = ls))
+    array.push(bL, label.new(bar_index + ext_right, ph, txt,
+         color     = color.new(color.black, 100),
+         textcolor = lvl_col,
+         style     = label.style_label_left,
+         size      = lbl_sz))
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+//  ⬇️  REGISTER SSL
+// ╚══════════════════════════════════════════════════════════════════════════╝
+if show_ssl and not na(pl)
+    pl_bi = bar_index - swing_len
+
+    bool is_eql      = false
+    int  eql_match_i = -1
+    if array.size(sp) > 0
+        for i = 0 to array.size(sp) - 1
+            if array.get(sa, i) and f_near(array.get(sp, i), pl)
+                is_eql      := true
+                eql_match_i := i
+                break
+
+    lvl_col = is_eql ? EQH_COL : color.new(ssl_col, 0)
+    lw      = is_eql ? 2       : 1
+    ls      = is_eql ? line.style_solid : line.style_dotted
+    txt     = is_eql ? "EQL · SSL" : "SSL"
+
+    if is_eql and eql_match_i >= 0
+        label.set_text     (array.get(sL, eql_match_i), "EQL · SSL")
+        label.set_textcolor(array.get(sL, eql_match_i), EQH_COL)
+        label.set_x        (array.get(sL, eql_match_i), bar_index + ext_right)
+        line.set_color     (array.get(sl, eql_match_i), EQH_COL)
+        line.set_width     (array.get(sl, eql_match_i), 2)
+        line.set_style     (array.get(sl, eql_match_i), line.style_solid)
+
+        if show_eqzone
+            match_bi = array.get(si, eql_match_i)
+            match_px = array.get(sp, eql_match_i)
+            top_z    = math.max(match_px, pl) + syminfo.mintick * 3
+            bot_z    = math.min(match_px, pl) - syminfo.mintick * 3
+            box.new(match_bi, top_z, bar_index + ext_right, bot_z,
+                 bgcolor      = color.new(#FFD700, ZONE_FADE),
+                 border_color = color.new(#FFD700, 40),
+                 border_width = 1)
+
+    array.push(sp, pl)
+    array.push(si, pl_bi)
+    array.push(sa, true)
+    array.push(se, is_eql)
+    array.push(sl, line.new(pl_bi, pl, bar_index + ext_right, pl,
+         color = lvl_col, width = lw, style = ls))
+    array.push(sL, label.new(bar_index + ext_right, pl, txt,
+         color     = color.new(color.black, 100),
+         textcolor = lvl_col,
+         style     = label.style_label_left,
+         size      = lbl_sz))
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+//  🔄  UPDATE — Extend · Sweep · Cleanup
+// ╚══════════════════════════════════════════════════════════════════════════╝
+bool bsl_swept_now = false
+bool ssl_swept_now = false
+int  act_bsl       = 0
+int  act_ssl       = 0
+int  tot_bsl_sw    = 0
+int  tot_ssl_sw    = 0
+
+// ─── BSL ───────────────────────────────────────────────────────────────────
+if array.size(bp) > 0
+    for i = array.size(bp) - 1 to 0
+        age = bar_index - array.get(bi, i)
+        if age > lookback
+            line.delete (array.get(bl, i))
+            label.delete(array.get(bL, i))
+            array.remove(bp, i)
+            array.remove(bi, i)
+            array.remove(ba, i)
+            array.remove(be, i)
+            array.remove(bl, i)
+            array.remove(bL, i)
+            continue
+        if array.get(ba, i)
+            lvl = array.get(bp, i)
+            ln  = array.get(bl, i)
+            lb  = array.get(bL, i)
+            if high > lvl
+                bsl_swept_now := true
+                array.set(ba, i, false)
+                if show_swept
+                    line.set_color (ln, color.new(bsl_col, SWEPT_FADE))
+                    line.set_style (ln, line.style_dashed)
+                    label.set_text      (lb, "✓ BSL")
+                    label.set_textcolor (lb, color.new(bsl_col, SWEPT_FADE))
+                else
+                    line.delete (ln)
+                    label.delete(lb)
+            else
+                act_bsl += 1
+                line.set_x2 (ln, bar_index + ext_right)
+                label.set_x (lb, bar_index + ext_right)
+        else
+            tot_bsl_sw += 1
+
+// ─── SSL ───────────────────────────────────────────────────────────────────
+if array.size(sp) > 0
+    for i = array.size(sp) - 1 to 0
+        age = bar_index - array.get(si, i)
+        if age > lookback
+            line.delete (array.get(sl, i))
+            label.delete(array.get(sL, i))
+            array.remove(sp, i)
+            array.remove(si, i)
+            array.remove(sa, i)
+            array.remove(se, i)
+            array.remove(sl, i)
+            array.remove(sL, i)
+            continue
+        if array.get(sa, i)
+            lvl = array.get(sp, i)
+            ln  = array.get(sl, i)
+            lb  = array.get(sL, i)
+            if low < lvl
+                ssl_swept_now := true
+                array.set(sa, i, false)
+                if show_swept
+                    line.set_color (ln, color.new(ssl_col, SWEPT_FADE))
+                    line.set_style (ln, line.style_dashed)
+                    label.set_text      (lb, "✓ SSL")
+                    label.set_textcolor (lb, color.new(ssl_col, SWEPT_FADE))
+                else
+                    line.delete (ln)
+                    label.delete(lb)
+            else
+                act_ssl += 1
+                line.set_x2 (ln, bar_index + ext_right)
+                label.set_x (lb, bar_index + ext_right)
+        else
+            tot_ssl_sw += 1
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+//  💥  SWEEP CANDLE HIGHLIGHT
+// ╚══════════════════════════════════════════════════════════════════════════╝
+bgcolor(hl_bar and bsl_swept_now ? color.new(bsl_col, 90) : na, title = "BSL Sweep Candle")
+bgcolor(hl_bar and ssl_swept_now ? color.new(ssl_col, 90) : na, title = "SSL Sweep Candle")
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+//  📊  INFO PANEL
+// ╚══════════════════════════════════════════════════════════════════════════╝
+if show_panel and barstate.islast
+    var table tbl = table.new(
+         position.top_right, 2, 6,
+         bgcolor      = color.new(#0D1117, 8),
+         border_color = color.new(#FFFFFF, 82),
+         border_width = 1,
+         frame_color  = color.new(#FFFFFF, 75),
+         frame_width  = 1)
+
+    table.cell(tbl, 0, 0, "LIQUIDITY",
+         text_color = color.white, text_size = size.small,
+         bgcolor    = color.new(#161B22, 0))
+    table.cell(tbl, 1, 0, "LB · " + str.tostring(lookback) + " bars",
+         text_color = color.gray,  text_size = size.small,
+         bgcolor    = color.new(#161B22, 0))
+
+    table.cell(tbl, 0, 1, "🔵 BSL Active",
+         text_color = color.new(bsl_col, 0), text_size = size.small)
+    table.cell(tbl, 1, 1, str.tostring(act_bsl),
+         text_color = color.white,           text_size = size.small)
+
+    table.cell(tbl, 0, 2, "🔴 SSL Active",
+         text_color = color.new(ssl_col, 0), text_size = size.small)
+    table.cell(tbl, 1, 2, str.tostring(act_ssl),
+         text_color = color.white,           text_size = size.small)
+
+    table.cell(tbl, 0, 3, "✓ BSL Swept",
+         text_color = color.new(bsl_col, 50), text_size = size.small)
+    table.cell(tbl, 1, 3, str.tostring(tot_bsl_sw),
+         text_color = color.gray,             text_size = size.small)
+
+    table.cell(tbl, 0, 4, "✓ SSL Swept",
+         text_color = color.new(ssl_col, 50), text_size = size.small)
+    table.cell(tbl, 1, 4, str.tostring(tot_ssl_sw),
+         text_color = color.gray,             text_size = size.small)
+
+    sweep_now = bsl_swept_now or ssl_swept_now
+    table.cell(tbl, 0, 5, "⚡ Sweep Now",
+         text_color = color.new(#FFD700, 0), text_size = size.small)
+    table.cell(tbl, 1, 5, sweep_now ? "YES" : "—",
+         text_color = sweep_now ? color.new(#FFD700, 0) : color.gray,
+         text_size  = size.small)
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+//  🔔  ALERTS
+// ╚══════════════════════════════════════════════════════════════════════════╝
+alertcondition(bsl_swept_now,
+     "BSL Swept 🔵", "Buy-Side Liquidity Swept — Potential reversal or continuation down.")
+alertcondition(ssl_swept_now,
+     "SSL Swept 🔴", "Sell-Side Liquidity Swept — Potential reversal or continuation up.")
+alertcondition(bsl_swept_now or ssl_swept_now,
+     "Liquidity Swept ⚡", "A Liquidity level has been swept.")
