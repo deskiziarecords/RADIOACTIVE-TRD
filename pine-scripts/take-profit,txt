@@ -1,0 +1,597 @@
+// ─────────────────────────────────────────────────
+// Take Profit Planner [AGPro Series]
+//
+// Author  : AGProLabs | AGPro Series
+// Version : 1.1
+//
+// Precision take-profit planning tool with 3 calculation modes (Fibonacci extensions,
+// R-multiples, Hybrid confluence). Builds a 5-tier profit ladder from any anchor source
+// (Manual / Pivot / Support-Resistance) with auto direction detection, confluence scoring,
+// TP/SL hit tracking, realized P&L and position sizing allocation for scalp and swing trades.
+//
+// This source code is subject to the terms of the Mozilla Public License 2.0
+// at https://mozilla.org/MPL/2.0/
+// ─────────────────────────────────────────────────
+
+//@version=6
+indicator("Take Profit Planner [AGPro Series]",
+     shorttitle = "AG Pro TP",
+     overlay    = true,
+     max_boxes_count  = 100,
+     max_lines_count  = 100,
+     max_labels_count = 250)
+
+// ─────────────────────────────────────────────────
+// AGPro Color Palette
+// ─────────────────────────────────────────────────
+headerBg      = color.rgb(37, 99, 235)
+headerText    = color.rgb(245, 247, 250)
+panelBg       = color.rgb(15, 23, 42)
+panelBorder   = color.rgb(51, 65, 85)
+panelLabelCol = color.rgb(148, 163, 184)
+panelValueCol = color.rgb(226, 232, 240)
+bullColor     = color.rgb(34, 197, 166)
+bearColor     = color.rgb(244, 114, 182)
+neutralColor  = color.rgb(245, 189, 92)
+accentColor   = color.rgb(129, 140, 248)
+
+// ─────────────────────────────────────────────────
+// Inputs — Mode & Anchor
+// ─────────────────────────────────────────────────
+grpMode    = "▸ Calculation Mode"
+grpAnchor  = "▸ Anchor & Stop Loss"
+grpTiers   = "▸ TP Ladder"
+grpAlloc   = "▸ Position Sizing"
+grpVisual  = "▸ Visuals"
+grpPanel   = "▸ Info Panel"
+grpAlerts  = "▸ Alerts"
+
+calcMode = input.string("Hybrid Confluence", "Calculation Mode",
+     options = ["Fibonacci Extensions", "R-Multiples", "Hybrid Confluence"],
+     group   = grpMode,
+     tooltip = "Fibonacci: Uses classic extension levels (1.272, 1.414, 1.618, 2.0, 2.618) projected from the Anchor→Swing leg.\n\nR-Multiples: Uses 1R, 2R, 3R, 5R, 8R based on the Stop Loss distance. Ideal for risk-based position management.\n\nHybrid Confluence: Combines Fibonacci targets with nearby round numbers and pivot S/R levels. Each TP receives a confluence score (★ to ★★★) indicating how many source types align at that price. This is the most robust mode for high-conviction exits.")
+
+anchorMode = input.string("Auto — Pivot High/Low", "Anchor Source",
+     options = ["Manual Price", "Auto — Pivot High/Low", "Auto — Recent S/R Zone"],
+     group   = grpAnchor,
+     tooltip = "Manual: You input Entry, Swing and Stop Loss prices directly.\n\nAuto Pivot: Detects the most recent confirmed pivot high/low using the pivot length. Anchor = last opposite pivot, Swing = last same-direction pivot.\n\nAuto S/R: Anchors the plan to the most recent swing-based support/resistance level.")
+
+pivotLen = input.int(10, "Pivot Length", minval = 2, maxval = 50,
+     group   = grpAnchor,
+     tooltip = "Bars on each side of a pivot for confirmation. Higher = stronger/slower pivots. 10 is balanced for most intraday and swing timeframes.")
+
+manualEntry = input.price(0.0, "Manual Entry Price",
+     group   = grpAnchor,
+     tooltip = "Only used when Anchor Source = Manual Price. Your planned entry price.")
+
+manualSwing = input.price(0.0, "Manual Swing / Origin Price",
+     group   = grpAnchor,
+     tooltip = "Only used when Anchor Source = Manual Price. The origin of the move (prior swing). Direction is auto-detected: Entry > Swing = LONG, Entry < Swing = SHORT.")
+
+manualSL = input.price(0.0, "Manual Stop Loss",
+     group   = grpAnchor,
+     tooltip = "Only used when Anchor Source = Manual Price. Your planned stop-loss price.")
+
+slMode = input.string("ATR Multiple", "Auto Stop Loss Mode",
+     options = ["ATR Multiple", "Swing Point", "Fixed Percent"],
+     group   = grpAnchor,
+     tooltip = "ATR Multiple: SL = Entry ± (ATR × multiplier).\nSwing Point: SL = the swing price itself (classic structural stop).\nFixed Percent: SL = Entry ± percent.")
+
+atrLen = input.int(14, "ATR Length", minval = 2, group = grpAnchor)
+atrMult = input.float(1.5, "ATR Multiplier", minval = 0.1, step = 0.1, group = grpAnchor)
+slPct = input.float(1.5, "Fixed SL Percent", minval = 0.1, step = 0.1, group = grpAnchor)
+
+// ── TP Ladder ──
+tierCount = input.int(5, "Number of TP Tiers", minval = 2, maxval = 7,
+     group   = grpTiers,
+     tooltip = "How many profit targets to plot. Default 5 is the classic ladder (scalper + swing balance).")
+
+fib1 = input.float(1.272, "Fib TP1", minval = 0.5, step = 0.001, group = grpTiers, inline = "fib1")
+fib2 = input.float(1.414, "Fib TP2", minval = 0.5, step = 0.001, group = grpTiers, inline = "fib2")
+fib3 = input.float(1.618, "Fib TP3", minval = 0.5, step = 0.001, group = grpTiers, inline = "fib3")
+fib4 = input.float(2.000, "Fib TP4", minval = 0.5, step = 0.001, group = grpTiers, inline = "fib4")
+fib5 = input.float(2.618, "Fib TP5", minval = 0.5, step = 0.001, group = grpTiers, inline = "fib5")
+fib6 = input.float(3.618, "Fib TP6", minval = 0.5, step = 0.001, group = grpTiers, inline = "fib6")
+fib7 = input.float(4.236, "Fib TP7", minval = 0.5, step = 0.001, group = grpTiers, inline = "fib7")
+
+r1 = input.float(1.0, "R-Mult TP1", minval = 0.1, step = 0.1, group = grpTiers, inline = "r1")
+r2 = input.float(2.0, "R-Mult TP2", minval = 0.1, step = 0.1, group = grpTiers, inline = "r2")
+r3 = input.float(3.0, "R-Mult TP3", minval = 0.1, step = 0.1, group = grpTiers, inline = "r3")
+r4 = input.float(5.0, "R-Mult TP4", minval = 0.1, step = 0.1, group = grpTiers, inline = "r4")
+r5 = input.float(8.0, "R-Mult TP5", minval = 0.1, step = 0.1, group = grpTiers, inline = "r5")
+r6 = input.float(13.0, "R-Mult TP6", minval = 0.1, step = 0.1, group = grpTiers, inline = "r6")
+r7 = input.float(21.0, "R-Mult TP7", minval = 0.1, step = 0.1, group = grpTiers, inline = "r7")
+
+// ── Position sizing ──
+alloc1 = input.float(20, "Alloc TP1 %", minval = 0, maxval = 100, step = 1, group = grpAlloc, inline = "a1")
+alloc2 = input.float(20, "Alloc TP2 %", minval = 0, maxval = 100, step = 1, group = grpAlloc, inline = "a2")
+alloc3 = input.float(25, "Alloc TP3 %", minval = 0, maxval = 100, step = 1, group = grpAlloc, inline = "a3")
+alloc4 = input.float(20, "Alloc TP4 %", minval = 0, maxval = 100, step = 1, group = grpAlloc, inline = "a4")
+alloc5 = input.float(15, "Alloc TP5 %", minval = 0, maxval = 100, step = 1, group = grpAlloc, inline = "a5")
+alloc6 = input.float(0,  "Alloc TP6 %", minval = 0, maxval = 100, step = 1, group = grpAlloc, inline = "a6")
+alloc7 = input.float(0,  "Alloc TP7 %", minval = 0, maxval = 100, step = 1, group = grpAlloc, inline = "a7",
+     tooltip = "Percentage of position to close at each TP. Should sum to 100% across active tiers for a full exit plan.")
+
+// ── Visuals ──
+showZones   = input.bool(true,  "Show TP Zones (rectangles)", group = grpVisual)
+zoneWidthAtr = input.float(0.25, "Zone Half-Width (ATR)", minval = 0.05, step = 0.05, group = grpVisual,
+     tooltip = "Vertical half-thickness of each TP zone, in ATR units. Creates a realistic price-acceptance band around each target.")
+showSL      = input.bool(true,  "Show Stop Loss Zone", group = grpVisual)
+showEntry   = input.bool(true,  "Show Entry Line",     group = grpVisual)
+showLabels  = input.bool(true,  "Show Price Labels",   group = grpVisual)
+zoneExtend  = input.int(50, "Zone Length (bars)", minval = 10, maxval = 500, group = grpVisual)
+labelSize   = input.string("Normal", "Label Size",
+     options = ["Tiny", "Small", "Normal", "Large"],
+     group   = grpVisual)
+
+// ── Panel ──
+showPanel   = input.bool(true, "Show Info Panel", group = grpPanel)
+panelPos    = input.string("Top Right", "Panel Location",
+     options = ["Top Left", "Top Right", "Middle Left", "Middle Right", "Bottom Left", "Bottom Right"],
+     group   = grpPanel)
+panelTheme  = input.string("Dark", "Panel Theme",
+     options = ["Dark", "Light"],
+     group   = grpPanel)
+panelTextSize = input.string("Normal", "Panel Text Size",
+     options = ["Tiny", "Small", "Normal", "Large"],
+     group   = grpPanel)
+helpTextSize = input.string("Normal", "Help Text Size",
+     options = ["Tiny", "Small", "Normal"],
+     group   = grpPanel)
+
+// ── Alerts ──
+alertOnTpHit  = input.bool(true, "Alert on TP Hit",   group = grpAlerts)
+alertOnSlHit  = input.bool(true, "Alert on SL Hit",   group = grpAlerts)
+alertOnAllTp  = input.bool(true, "Alert on All TPs Reached", group = grpAlerts)
+
+// ─────────────────────────────────────────────────
+// Size helpers
+// ─────────────────────────────────────────────────
+f_toSize(s) =>
+    switch s
+        "Tiny"   => size.tiny
+        "Small"  => size.small
+        "Normal" => size.normal
+        "Large"  => size.large
+        =>          size.normal
+
+f_toPos(p) =>
+    switch p
+        "Top Left"      => position.top_left
+        "Top Right"     => position.top_right
+        "Middle Left"   => position.middle_left
+        "Middle Right"  => position.middle_right
+        "Bottom Left"   => position.bottom_left
+        "Bottom Right"  => position.bottom_right
+        =>                  position.top_right
+
+// ─────────────────────────────────────────────────
+// Anchor detection
+// ─────────────────────────────────────────────────
+atr = ta.atr(atrLen)
+
+var float lastPivotHigh = na
+var float lastPivotLow  = na
+var int   lastPivotHighBar = na
+var int   lastPivotLowBar  = na
+
+ph = ta.pivothigh(high, pivotLen, pivotLen)
+pl = ta.pivotlow(low,  pivotLen, pivotLen)
+
+if not na(ph)
+    lastPivotHigh := ph
+    lastPivotHighBar := bar_index - pivotLen
+if not na(pl)
+    lastPivotLow := pl
+    lastPivotLowBar := bar_index - pivotLen
+
+// Determine entry / swing / direction / stop
+var float entryPx = na
+var float swingPx = na
+var float slPx    = na
+var int   isLong  = na    // 1 = long, -1 = short, na = undefined
+
+if anchorMode == "Manual Price"
+    entryPx := manualEntry
+    swingPx := manualSwing
+    slPx    := manualSL
+    isLong  := manualEntry > manualSwing ? 1 : manualEntry < manualSwing ? -1 : na
+else if anchorMode == "Auto — Pivot High/Low"
+    // Use the most recent pivot as swing, treat current close as entry candidate
+    mostRecentIsHigh = na(lastPivotHighBar) ? false : na(lastPivotLowBar) ? true : lastPivotHighBar > lastPivotLowBar
+    if mostRecentIsHigh and not na(lastPivotHigh) and not na(lastPivotLow)
+        // Most recent = high → SHORT setup (fade the high)
+        entryPx := lastPivotHigh
+        swingPx := lastPivotLow
+        isLong  := -1
+    else if not mostRecentIsHigh and not na(lastPivotHigh) and not na(lastPivotLow)
+        entryPx := lastPivotLow
+        swingPx := lastPivotHigh
+        isLong  := 1
+else  // Auto — Recent S/R Zone
+    // Use the broader extreme as swing, closer extreme as entry
+    if not na(lastPivotHigh) and not na(lastPivotLow)
+        entryPx := close
+        if close > (lastPivotHigh + lastPivotLow) / 2
+            swingPx := lastPivotLow
+            isLong  := 1
+        else
+            swingPx := lastPivotHigh
+            isLong  := -1
+
+// Auto SL (when not Manual)
+if anchorMode != "Manual Price" and not na(entryPx) and not na(isLong)
+    if slMode == "ATR Multiple"
+        slPx := isLong == 1 ? entryPx - atr * atrMult : entryPx + atr * atrMult
+    else if slMode == "Swing Point"
+        slPx := swingPx
+    else  // Fixed Percent
+        slPx := isLong == 1 ? entryPx * (1 - slPct / 100) : entryPx * (1 + slPct / 100)
+
+// ─────────────────────────────────────────────────
+// TP level computation
+// ─────────────────────────────────────────────────
+// Build arrays of chosen tier settings
+f_getFib(i) =>
+    switch i
+        1 => fib1
+        2 => fib2
+        3 => fib3
+        4 => fib4
+        5 => fib5
+        6 => fib6
+        7 => fib7
+        =>   1.0
+
+f_getR(i) =>
+    switch i
+        1 => r1
+        2 => r2
+        3 => r3
+        4 => r4
+        5 => r5
+        6 => r6
+        7 => r7
+        =>   1.0
+
+f_getAlloc(i) =>
+    switch i
+        1 => alloc1
+        2 => alloc2
+        3 => alloc3
+        4 => alloc4
+        5 => alloc5
+        6 => alloc6
+        7 => alloc7
+        =>   0.0
+
+// Round-number detector: returns nearest psychological level within threshold
+f_nearestRound(px, unit) =>
+    rounded = math.round(px / unit) * unit
+    math.abs(px - rounded) / atr < 0.15 ? rounded : na
+
+// Scale round-number unit to the instrument
+roundUnit = math.pow(10, math.floor(math.log10(math.max(close, 0.00001))) - 1)
+
+// Compute a single TP price based on tier index
+f_computeTp(tier) =>
+    float priceOut = na
+    if not na(entryPx) and not na(swingPx) and not na(slPx) and not na(isLong)
+        legSize = math.abs(entryPx - swingPx)
+        riskSize = math.abs(entryPx - slPx)
+        if calcMode == "Fibonacci Extensions"
+            mult = f_getFib(tier)
+            priceOut := isLong == 1 ? entryPx + legSize * (mult - 1) : entryPx - legSize * (mult - 1)
+        else if calcMode == "R-Multiples"
+            mult = f_getR(tier)
+            priceOut := isLong == 1 ? entryPx + riskSize * mult : entryPx - riskSize * mult
+        else  // Hybrid Confluence
+            mult = f_getFib(tier)
+            priceOut := isLong == 1 ? entryPx + legSize * (mult - 1) : entryPx - legSize * (mult - 1)
+    priceOut
+
+// Confluence score (Hybrid mode only): counts Fib + Round + SR alignment
+f_confluence(tpPx) =>
+    int score = 1  // Fib itself always counts
+    if not na(tpPx)
+        rn = f_nearestRound(tpPx, roundUnit)
+        if not na(rn)
+            score += 1
+        // Check nearest pivot S/R
+        float srCheck = na
+        if not na(lastPivotHigh) and math.abs(tpPx - lastPivotHigh) / atr < 0.2
+            srCheck := lastPivotHigh
+        if not na(lastPivotLow) and math.abs(tpPx - lastPivotLow) / atr < 0.2
+            srCheck := lastPivotLow
+        if not na(srCheck)
+            score += 1
+    score
+
+f_stars(score) =>
+    score >= 3 ? "★★★" : score == 2 ? "★★☆" : "★☆☆"
+
+// ─────────────────────────────────────────────────
+// TP / SL state tracking
+// ─────────────────────────────────────────────────
+var array<bool>  tpHit = array.from(false, false, false, false, false, false, false)
+var bool   slHit = false
+var int    hitCount = 0
+var bool   allHitFired = false
+
+// Compute tps once per bar
+var array<float> tpPx = array.from(float(na), float(na), float(na), float(na), float(na), float(na), float(na))
+var array<int>   tpScore = array.from(1, 1, 1, 1, 1, 1, 1)
+
+if barstate.islast or barstate.isconfirmed
+    for i = 1 to 7
+        p = f_computeTp(i)
+        array.set(tpPx, i - 1, p)
+        array.set(tpScore, i - 1, f_confluence(p))
+
+// Reset hits when anchor significantly changes
+var float lastEntry = na
+if not na(entryPx) and (na(lastEntry) or math.abs(entryPx - lastEntry) / nz(atr, 1) > 1.0)
+    for i = 0 to 6
+        array.set(tpHit, i, false)
+    slHit := false
+    hitCount := 0
+    allHitFired := false
+    lastEntry := entryPx
+
+// Detect hits (on confirmed bars)
+if barstate.isconfirmed and not na(entryPx) and not na(isLong)
+    for i = 1 to tierCount
+        if not array.get(tpHit, i - 1)
+            tp = array.get(tpPx, i - 1)
+            if not na(tp)
+                hit = isLong == 1 ? high >= tp : low <= tp
+                if hit
+                    array.set(tpHit, i - 1, true)
+                    hitCount += 1
+                    if alertOnTpHit
+                        alert("TP" + str.tostring(i) + " Hit @ " + str.tostring(tp, format.mintick) +
+                             " | " + (isLong == 1 ? "LONG" : "SHORT"), alert.freq_once_per_bar)
+    if not slHit and not na(slPx)
+        hitSl = isLong == 1 ? low <= slPx : high >= slPx
+        if hitSl
+            slHit := true
+            if alertOnSlHit
+                alert("Stop Loss Hit @ " + str.tostring(slPx, format.mintick), alert.freq_once_per_bar)
+    if hitCount >= tierCount and not allHitFired
+        allHitFired := true
+        if alertOnAllTp
+            alert("All " + str.tostring(tierCount) + " TPs Reached — Exit Complete", alert.freq_once_per_bar)
+
+// ─────────────────────────────────────────────────
+// Drawing — zones, lines, labels
+// ─────────────────────────────────────────────────
+var array<box>   tpBoxes  = array.new<box>()
+var array<line>  tpLines  = array.new<line>()
+var array<label> tpLabels = array.new<label>()
+var box     slBox    = na
+var line    entryLine = na
+var label   entryLabel = na
+var label   slLabel   = na
+
+// Clear previous drawings on last bar
+f_clearDraws() =>
+    while array.size(tpBoxes) > 0
+        box.delete(array.pop(tpBoxes))
+    while array.size(tpLines) > 0
+        line.delete(array.pop(tpLines))
+    while array.size(tpLabels) > 0
+        label.delete(array.pop(tpLabels))
+    if not na(slBox)
+        box.delete(slBox)
+    if not na(entryLine)
+        line.delete(entryLine)
+    if not na(entryLabel)
+        label.delete(entryLabel)
+    if not na(slLabel)
+        label.delete(slLabel)
+
+if barstate.islast
+    f_clearDraws()
+    if not na(entryPx) and not na(isLong)
+        dirCol = isLong == 1 ? bullColor : bearColor
+        bar1 = bar_index
+        bar2 = bar_index + zoneExtend
+        halfBand = atr * zoneWidthAtr
+
+        // Entry line
+        if showEntry
+            entryLine := line.new(bar1, entryPx, bar2, entryPx,
+                 color = accentColor, width = 2, style = line.style_solid)
+            if showLabels
+                entryLabel := label.new(bar2, entryPx,
+                     "ENTRY  " + str.tostring(entryPx, format.mintick),
+                     xloc = xloc.bar_index, yloc = yloc.price,
+                     color = accentColor, textcolor = headerText,
+                     style = label.style_label_left, size = f_toSize(labelSize))
+
+        // SL zone
+        if showSL and not na(slPx)
+            slBox := box.new(bar1, slPx + halfBand * 0.5, bar2, slPx - halfBand * 0.5,
+                 border_color = color.new(bearColor, 40),
+                 bgcolor      = color.new(bearColor, 85))
+            if showLabels
+                slRiskPct = math.abs(entryPx - slPx) / entryPx * 100
+                slLabel := label.new(bar2, slPx,
+                     "SL  " + str.tostring(slPx, format.mintick) +
+                     "  (−" + str.tostring(slRiskPct, "#.##") + "%)",
+                     xloc = xloc.bar_index, yloc = yloc.price,
+                     color = bearColor, textcolor = headerText,
+                     style = label.style_label_left, size = f_toSize(labelSize))
+
+        // TP zones + labels
+        for i = 1 to tierCount
+            tp = array.get(tpPx, i - 1)
+            if not na(tp)
+                hitState = array.get(tpHit, i - 1)
+                tpCol = hitState ? color.new(neutralColor, 0) : color.new(dirCol, 0)
+                tpBg  = hitState ? color.new(neutralColor, 80) : color.new(dirCol, 85)
+
+                if showZones
+                    b = box.new(bar1, tp + halfBand, bar2, tp - halfBand,
+                         border_color = color.new(tpCol, 30),
+                         bgcolor      = tpBg)
+                    array.push(tpBoxes, b)
+                else
+                    ln = line.new(bar1, tp, bar2, tp,
+                         color = tpCol, width = 1, style = line.style_dashed)
+                    array.push(tpLines, ln)
+
+                if showLabels
+                    score = array.get(tpScore, i - 1)
+                    labelTxt = "TP" + str.tostring(i)
+                    if calcMode == "Fibonacci Extensions"
+                        labelTxt += "  " + str.tostring(f_getFib(i), "#.###") + " Fib"
+                    else if calcMode == "R-Multiples"
+                        labelTxt += "  " + str.tostring(f_getR(i), "#.#") + "R"
+                    else
+                        labelTxt += "  " + f_stars(score)
+                    labelTxt += "   " + str.tostring(tp, format.mintick)
+                    if hitState
+                        labelTxt += "  ✓"
+                    lb = label.new(bar2, tp, labelTxt,
+                         xloc = xloc.bar_index, yloc = yloc.price,
+                         color = hitState ? neutralColor : tpCol,
+                         textcolor = headerText,
+                         style = label.style_label_left, size = f_toSize(labelSize))
+                    array.push(tpLabels, lb)
+
+// ─────────────────────────────────────────────────
+// Info Panel
+// ─────────────────────────────────────────────────
+var table panel = na
+
+f_themeBg()     => panelTheme == "Dark" ? panelBg : color.rgb(248, 250, 252)
+f_themeBorder() => panelTheme == "Dark" ? panelBorder : color.rgb(203, 213, 225)
+f_themeLabel()  => panelTheme == "Dark" ? panelLabelCol : color.rgb(71, 85, 105)
+f_themeValue()  => panelTheme == "Dark" ? panelValueCol : color.rgb(15, 23, 42)
+
+if showPanel and barstate.islast
+    if not na(panel)
+        table.delete(panel)
+    rows = 10 + tierCount
+    panel := table.new(f_toPos(panelPos), 3, rows,
+         border_color = f_themeBorder(), border_width = 1, frame_color = f_themeBorder(), frame_width = 1)
+
+    // Header — merged solid blue first row
+    table.cell(panel, 0, 0, "AG Pro Take Profit Plan",
+         text_color = headerText, bgcolor = headerBg, text_size = f_toSize(panelTextSize))
+    table.merge_cells(panel, 0, 0, 2, 0)
+
+    r = 1
+    table.cell(panel, 0, r, "Mode",      text_color = f_themeLabel(), bgcolor = f_themeBg(), text_size = f_toSize(panelTextSize), text_halign = text.align_left)
+    table.cell(panel, 1, r, calcMode,    text_color = accentColor,    bgcolor = f_themeBg(), text_size = f_toSize(panelTextSize))
+    table.merge_cells(panel, 1, r, 2, r)
+    r += 1
+
+    dirStr = isLong == 1 ? "LONG ▲" : isLong == -1 ? "SHORT ▼" : "—"
+    dirCol = isLong == 1 ? bullColor : isLong == -1 ? bearColor : neutralColor
+    table.cell(panel, 0, r, "Direction", text_color = f_themeLabel(), bgcolor = f_themeBg(), text_size = f_toSize(panelTextSize), text_halign = text.align_left)
+    table.cell(panel, 1, r, dirStr,      text_color = dirCol,          bgcolor = f_themeBg(), text_size = f_toSize(panelTextSize))
+    table.merge_cells(panel, 1, r, 2, r)
+    r += 1
+
+    table.cell(panel, 0, r, "Entry",     text_color = f_themeLabel(), bgcolor = f_themeBg(), text_size = f_toSize(panelTextSize), text_halign = text.align_left)
+    table.cell(panel, 1, r, na(entryPx) ? "—" : str.tostring(entryPx, format.mintick),
+         text_color = f_themeValue(), bgcolor = f_themeBg(), text_size = f_toSize(panelTextSize))
+    table.merge_cells(panel, 1, r, 2, r)
+    r += 1
+
+    slRiskPct = na(entryPx) or na(slPx) ? na : math.abs(entryPx - slPx) / entryPx * 100
+    table.cell(panel, 0, r, "Stop Loss", text_color = f_themeLabel(), bgcolor = f_themeBg(), text_size = f_toSize(panelTextSize), text_halign = text.align_left)
+    table.cell(panel, 1, r, na(slPx) ? "—" : str.tostring(slPx, format.mintick) + "  (" + str.tostring(slRiskPct, "#.##") + "%)",
+         text_color = bearColor, bgcolor = f_themeBg(), text_size = f_toSize(panelTextSize))
+    table.merge_cells(panel, 1, r, 2, r)
+    r += 1
+
+    // Separator
+    table.cell(panel, 0, r, "─────────── TP Ladder ───────────",
+         text_color = f_themeLabel(), bgcolor = f_themeBg(), text_size = f_toSize(helpTextSize))
+    table.merge_cells(panel, 0, r, 2, r)
+    r += 1
+
+    // TP rows
+    for i = 1 to tierCount
+        tp = array.get(tpPx, i - 1)
+        hitState = array.get(tpHit, i - 1)
+        score = array.get(tpScore, i - 1)
+        alloc = f_getAlloc(i)
+        tpLabel = "TP" + str.tostring(i)
+        if calcMode == "Fibonacci Extensions"
+            tpLabel += "  " + str.tostring(f_getFib(i), "#.###")
+        else if calcMode == "R-Multiples"
+            tpLabel += "  " + str.tostring(f_getR(i), "#.#") + "R"
+        else
+            tpLabel += "  " + f_stars(score)
+
+        tpPriceStr = na(tp) ? "—" : str.tostring(tp, format.mintick) + (hitState ? "  ✓" : "")
+        tpAllocStr = str.tostring(alloc, "#") + "%"
+        tpCol = hitState ? neutralColor : (isLong == 1 ? bullColor : bearColor)
+
+        table.cell(panel, 0, r, tpLabel,     text_color = f_themeLabel(), bgcolor = f_themeBg(), text_size = f_toSize(panelTextSize), text_halign = text.align_left)
+        table.cell(panel, 1, r, tpPriceStr,  text_color = tpCol,          bgcolor = f_themeBg(), text_size = f_toSize(panelTextSize))
+        table.cell(panel, 2, r, tpAllocStr,  text_color = f_themeValue(), bgcolor = f_themeBg(), text_size = f_toSize(panelTextSize))
+        r += 1
+
+    // Progress
+    progStr = str.tostring(hitCount) + " / " + str.tostring(tierCount) + " Hit"
+    table.cell(panel, 0, r, "Progress",  text_color = f_themeLabel(), bgcolor = f_themeBg(), text_size = f_toSize(panelTextSize), text_halign = text.align_left)
+    table.cell(panel, 1, r, progStr,     text_color = f_themeValue(), bgcolor = f_themeBg(), text_size = f_toSize(panelTextSize))
+    table.merge_cells(panel, 1, r, 2, r)
+    r += 1
+
+    // Expected total if all hit (weighted by allocation)
+    float expectedPct = 0.0
+    if not na(entryPx) and entryPx != 0
+        for i = 1 to tierCount
+            tp = array.get(tpPx, i - 1)
+            a = f_getAlloc(i)
+            if not na(tp) and a > 0
+                movePct = math.abs(tp - entryPx) / entryPx * 100
+                expectedPct += movePct * (a / 100)
+    table.cell(panel, 0, r, "Expected",  text_color = f_themeLabel(), bgcolor = f_themeBg(), text_size = f_toSize(panelTextSize), text_halign = text.align_left)
+    table.cell(panel, 1, r, "+" + str.tostring(expectedPct, "#.##") + "%",
+         text_color = bullColor, bgcolor = f_themeBg(), text_size = f_toSize(panelTextSize))
+    table.merge_cells(panel, 1, r, 2, r)
+    r += 1
+
+    // Realized
+    float realizedPct = 0.0
+    if not na(entryPx) and entryPx != 0
+        for i = 1 to tierCount
+            if array.get(tpHit, i - 1)
+                tp = array.get(tpPx, i - 1)
+                a = f_getAlloc(i)
+                if not na(tp) and a > 0
+                    movePct = math.abs(tp - entryPx) / entryPx * 100
+                    realizedPct += movePct * (a / 100)
+    table.cell(panel, 0, r, "Realized",  text_color = f_themeLabel(), bgcolor = f_themeBg(), text_size = f_toSize(panelTextSize), text_halign = text.align_left)
+    table.cell(panel, 1, r, "+" + str.tostring(realizedPct, "#.##") + "%",
+         text_color = neutralColor, bgcolor = f_themeBg(), text_size = f_toSize(panelTextSize))
+    table.merge_cells(panel, 1, r, 2, r)
+    r += 1
+
+    // Status — multi-state for richer feedback
+    float hitPct = tierCount > 0 ? hitCount / tierCount * 100 : 0.0
+    statusStr = slHit ? "STOPPED OUT" :
+             allHitFired ? "ALL TPs HIT" :
+             hitCount == 0 ? "ACTIVE" :
+             hitPct >= 75 ? "NEAR COMPLETE" :
+             hitPct >= 50 ? "IN PROFIT" :
+             "PROGRESSING"
+    statusCol = slHit ? bearColor :
+             allHitFired ? bullColor :
+             hitCount == 0 ? accentColor :
+             hitPct >= 50 ? (isLong == 1 ? bullColor : bearColor) :
+             neutralColor
+    table.cell(panel, 0, r, "Status",    text_color = f_themeLabel(), bgcolor = f_themeBg(), text_size = f_toSize(panelTextSize), text_halign = text.align_left)
+    table.cell(panel, 1, r, statusStr,   text_color = statusCol,       bgcolor = f_themeBg(), text_size = f_toSize(panelTextSize))
+    table.merge_cells(panel, 1, r, 2, r)
+
+// ─────────────────────────────────────────────────
+// End of script
+// ─────────────────────────────────────────────────
