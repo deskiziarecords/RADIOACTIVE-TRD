@@ -1,0 +1,438 @@
+// ─────────────────────────────────────────────────
+// Stop Loss Optimizer Engine [AGPro Series]
+//
+// Author  : AGProLabs | AGPro Series
+// Version : 1.0
+//
+// Side-by-side comparison of four independent stop-loss methodologies:
+// ATR-SL (volatility), Pivot-SL (structure), Chandelier-SL (trailing),
+// Swing-SL (recent extreme). Each method plots long & short levels with
+// a historical hold-rate statistic so traders can compare how often
+// each method would have survived a fixed forward window on the active
+// symbol and timeframe. Built for disciplined risk management,
+// position sizing and R-multiple planning.
+//
+// This source code is subject to the terms of the Mozilla Public License 2.0
+// at https://mozilla.org/MPL/2.0/
+// ─────────────────────────────────────────────────
+
+//@version=6
+indicator("Stop Loss Optimizer Engine [AGPro Series]",
+     shorttitle = "AG Pro SLOpt",
+     overlay    = true,
+     max_lines_count  = 500,
+     max_labels_count = 500,
+     max_boxes_count  = 500)
+
+// ═════════════════════════════════════════════════
+// INPUTS
+// ═════════════════════════════════════════════════
+
+// ── Method toggles ────────────────────────────────
+grpMethods = "Methods"
+useATR   = input.bool(true,  "ATR-SL",        group = grpMethods, tooltip = "Volatility-based stop. SL distance = ATR(length) × multiplier. Widens in volatile markets, tightens in calm ones.")
+useP     = input.bool(true,  "Pivot-SL",      group = grpMethods, tooltip = "Structure-based stop. SL is placed at the most recent confirmed pivot high/low. Respects market structure.")
+useCh    = input.bool(true,  "Chandelier-SL", group = grpMethods, tooltip = "Trailing stop. LONG SL = highest high(N) − ATR × mult. SHORT SL = lowest low(N) + ATR × mult. Classic Le Beau/Elder method.")
+useSw    = input.bool(true,  "Swing-SL",      group = grpMethods, tooltip = "Recent extreme stop. LONG SL = lowest low over N bars. SHORT SL = highest high over N bars. Simple, robust, scalper-friendly.")
+
+// ── ATR-SL ────────────────────────────────────────
+grpATR = "ATR-SL"
+atrLen   = input.int(14,     "ATR Length",     minval = 1, group = grpATR, tooltip = "ATR period used for volatility stop calculation.")
+atrMult  = input.float(1.5,  "ATR Multiplier", minval = 0.1, step = 0.1, group = grpATR, tooltip = "Multiplier applied to ATR. 1.5× is the balanced default (1.0 tight, 2.0 conservative).")
+
+// ── Pivot-SL ──────────────────────────────────────
+grpP = "Pivot-SL"
+pivLen   = input.int(5,      "Pivot Length",   minval = 1, group = grpP, tooltip = "Bars left & right required to confirm a pivot high/low. Higher = fewer but stronger pivots.")
+
+// ── Chandelier-SL ─────────────────────────────────
+grpCh = "Chandelier-SL"
+chLen    = input.int(22,     "Chandelier Length",     minval = 1, group = grpCh, tooltip = "Lookback period for highest-high / lowest-low extremes used in the Chandelier trail.")
+chMult   = input.float(2.5,  "Chandelier Multiplier", minval = 0.1, step = 0.1, group = grpCh, tooltip = "ATR multiplier applied to the extreme. 2.5× is the balanced default.")
+
+// ── Swing-SL ──────────────────────────────────────
+grpSw = "Swing-SL"
+swLen    = input.int(7,      "Swing Lookback", minval = 1, group = grpSw, tooltip = "Bars to look back for recent low (long SL) or high (short SL).")
+
+// ── Statistics ────────────────────────────────────
+grpStats = "Hold-Rate Statistics"
+statLook = input.int(1000,   "Statistics Lookback (bars)", minval = 100, maxval = 5000, group = grpStats, tooltip = "Total bars used to compute hold-rate. 1000 = balanced sample size.")
+statWin  = input.int(10,     "Forward Window (bars)",      minval = 5,   maxval = 200,  group = grpStats, tooltip = "Forward-looking window to test whether SL level was hit. 10 bars matches typical short-to-medium trade duration. Raise for swing, lower for scalp.")
+
+// ── Visuals ───────────────────────────────────────
+grpVis = "Visuals"
+showLong    = input.bool(true,  "Show LONG SL Lines",  group = grpVis, tooltip = "Display the four LONG stop-loss levels (dotted lines below price).")
+showShort   = input.bool(true,  "Show SHORT SL Lines", group = grpVis, tooltip = "Display the four SHORT stop-loss levels (dashed lines above price).")
+showLabels  = input.bool(true,  "Show Level Labels",   group = grpVis, tooltip = "Display method name & price at the right edge of each SL line.")
+showZone    = input.bool(true,  "Show Risk Zone",      group = grpVis, tooltip = "Display a shaded rectangle from current close to the highest-hold-rate SL (premium S/R-style zone).")
+useTrend    = input.bool(true,  "Dim Counter-Trend Side", group = grpVis, tooltip = "Uses EMA50 trend filter to fade lines on the non-dominant side for a cleaner look. Disable to see both sides at full opacity.")
+lineLen     = input.int(30,     "Line Length (bars)",  minval = 5, maxval = 200, group = grpVis, tooltip = "How many bars to the right each SL line extends.")
+
+// ── Panel ─────────────────────────────────────────
+grpPanel = "Panel"
+showPanel = input.bool(true, "Show Panel", group = grpPanel)
+panelPos  = input.string("Top Right", "Panel Location",
+     options = ["Top Right","Top Left","Middle Right","Middle Left","Bottom Right","Bottom Left"], group = grpPanel)
+panelTheme = input.string("Dark", "Panel Theme", options = ["Dark","Light"], group = grpPanel)
+
+// ── Font sizes ────────────────────────────────────
+grpFont = "Font Sizes"
+panelFontStr = input.string("Normal", "Panel Font Size",  options = ["Tiny","Small","Normal","Large","Huge"], group = grpFont)
+labelFontStr = input.string("Normal", "Label Font Size",  options = ["Tiny","Small","Normal","Large","Huge"], group = grpFont)
+
+f_size(s) =>
+    s == "Tiny"   ? size.tiny   :
+     s == "Small"  ? size.small  :
+     s == "Normal" ? size.normal :
+     s == "Large"  ? size.large  :
+     size.huge
+panelFont = f_size(panelFontStr)
+labelFont = f_size(labelFontStr)
+
+// ═════════════════════════════════════════════════
+// AGPRO COLOR PALETTE
+// ═════════════════════════════════════════════════
+headerBg      = color.rgb(37, 99, 235)      // #2563EB
+headerText    = color.rgb(245, 247, 250)    // #F5F7FA
+panelBg       = color.rgb(15, 23, 42)       // #0F172A
+panelBorder   = color.rgb(51, 65, 85)       // #334155
+panelLabelCol = color.rgb(148, 163, 184)    // #94A3B8
+panelValueCol = color.rgb(226, 232, 240)    // #E2E8F0
+bullColor     = color.rgb(34, 197, 166)     // #22C5A6
+bearColor     = color.rgb(244, 114, 182)    // #F472B6
+neutralColor  = color.rgb(245, 189, 92)     // #F5BD5C
+accentColor   = color.rgb(129, 140, 248)    // #818CF8
+
+// Light-theme overrides for panel only
+panelBgUse       = panelTheme == "Light" ? color.rgb(248, 250, 252) : panelBg
+panelBorderUse   = panelTheme == "Light" ? color.rgb(203, 213, 225) : panelBorder
+panelLabelUse    = panelTheme == "Light" ? color.rgb(71, 85, 105)   : panelLabelCol
+panelValueUse    = panelTheme == "Light" ? color.rgb(15, 23, 42)    : panelValueCol
+
+// Method → color mapping
+atrCol = accentColor
+pCol   = neutralColor
+chCol  = bearColor
+swCol  = bullColor
+
+// ═════════════════════════════════════════════════
+// CORE CALCULATIONS
+// ═════════════════════════════════════════════════
+
+atrVal = ta.atr(atrLen)
+
+// ATR-SL
+atrSL_L = close - atrVal * atrMult
+atrSL_S = close + atrVal * atrMult
+
+// Pivot-SL (most recent confirmed pivot)
+pivH = ta.pivothigh(high, pivLen, pivLen)
+pivL = ta.pivotlow(low,  pivLen, pivLen)
+var float lastPivL = na
+var float lastPivH = na
+if not na(pivL)
+    lastPivL := pivL
+if not na(pivH)
+    lastPivH := pivH
+pSL_L = nz(lastPivL, close - atrVal)
+pSL_S = nz(lastPivH, close + atrVal)
+
+// Chandelier-SL
+chSL_L = ta.highest(high, chLen) - atrVal * chMult
+chSL_S = ta.lowest(low,   chLen) + atrVal * chMult
+
+// Swing-SL
+swSL_L = ta.lowest(low,   swLen)
+swSL_S = ta.highest(high, swLen)
+
+// Trend filter
+emaTrend = ta.ema(close, 50)
+isBull   = close > emaTrend
+
+// ═════════════════════════════════════════════════
+// HOLD-RATE STATISTICS
+// For every historical bar, we know the SL level that
+// WOULD have been placed at that bar (based on the
+// method's formula at bar offset statWin back).
+// We check whether it was breached within the next
+// statWin bars. Hit = breached. Hold = survived.
+// Hold Rate = holdCount / totalEvaluated × 100.
+//
+// Evaluation at bar t (current): uses SL[statWin]
+// (the level statWin bars ago) and compares vs
+// ta.lowest(low, statWin) / ta.highest(high, statWin)
+// over the window that follows it.
+// ═════════════════════════════════════════════════
+
+// Per-bar hit booleans (true = SL was hit within the forward window)
+atrHitL = ta.lowest(low,  statWin) <= atrSL_L[statWin]
+atrHitS = ta.highest(high, statWin) >= atrSL_S[statWin]
+pHitL   = ta.lowest(low,  statWin) <= pSL_L[statWin]
+pHitS   = ta.highest(high, statWin) >= pSL_S[statWin]
+chHitL  = ta.lowest(low,  statWin) <= chSL_L[statWin]
+chHitS  = ta.highest(high, statWin) >= chSL_S[statWin]
+swHitL  = ta.lowest(low,  statWin) <= swSL_L[statWin]
+swHitS  = ta.highest(high, statWin) >= swSL_S[statWin]
+
+// Each bar produces a boolean; we convert to 1/0 and
+// take the rolling sum over the lookback window using
+// math.sum() — this is O(1) per bar in Pine (built-in)
+// and vastly cheaper than a manual for-loop.
+f_holdPct(hitCond) =>
+    hitInt   = hitCond ? 1 : 0
+    hitSum   = math.sum(hitInt, statLook)
+    // totalBars evaluated within the rolling window, clamped
+    // by available history (bar_index can be smaller).
+    totalN   = math.min(bar_index + 1, statLook)
+    totalN > 0 ? (totalN - hitSum) / totalN * 100.0 : na
+
+// Per-method hold rates (long & short)
+hr_atrL_s = f_holdPct(atrHitL)
+hr_atrS_s = f_holdPct(atrHitS)
+hr_pL_s   = f_holdPct(pHitL)
+hr_pS_s   = f_holdPct(pHitS)
+hr_chL_s  = f_holdPct(chHitL)
+hr_chS_s  = f_holdPct(chHitS)
+hr_swL_s  = f_holdPct(swHitL)
+hr_swS_s  = f_holdPct(swHitS)
+
+// Snapshot values on the last bar (for panel display)
+var float hr_atrL = na, var float hr_atrS = na
+var float hr_pL   = na, var float hr_pS   = na
+var float hr_chL  = na, var float hr_chS  = na
+var float hr_swL  = na, var float hr_swS  = na
+
+if barstate.islast
+    hr_atrL := hr_atrL_s
+    hr_atrS := hr_atrS_s
+    hr_pL   := hr_pL_s
+    hr_pS   := hr_pS_s
+    hr_chL  := hr_chL_s
+    hr_chS  := hr_chS_s
+    hr_swL  := hr_swL_s
+    hr_swS  := hr_swS_s
+
+// Combined hold rate per method (avg of long & short)
+avgRate(a, b) => na(a) and na(b) ? na : na(a) ? b : na(b) ? a : (a + b) / 2.0
+hr_atr = avgRate(hr_atrL, hr_atrS)
+hr_p   = avgRate(hr_pL,   hr_pS)
+hr_ch  = avgRate(hr_chL,  hr_chS)
+hr_sw  = avgRate(hr_swL,  hr_swS)
+
+// Determine best method (highest hold rate among enabled).
+// If no method is enabled or all rates are na, bestIdx stays -1.
+f_rate(enabled, r) => enabled and not na(r) ? r : -1.0
+rates = array.from(f_rate(useATR, hr_atr), f_rate(useP, hr_p), f_rate(useCh, hr_ch), f_rate(useSw, hr_sw))
+maxRate = array.max(rates)
+bestIdx = maxRate > -1.0 ? array.indexof(rates, maxRate) : -1
+// bestIdx: 0=ATR, 1=Pivot, 2=Chand, 3=Swing, -1=none
+
+// ═════════════════════════════════════════════════
+// DRAWING — SL LINES & LABELS
+// ═════════════════════════════════════════════════
+
+// Opacity: dim counter-trend side if useTrend enabled
+longOpacity  = useTrend and not isBull ? 55 : 0
+shortOpacity = useTrend and     isBull ? 55 : 0
+
+f_col(base, opac) => color.new(base, opac)
+
+// Persistent line & label IDs — updated on last bar only for efficiency
+var line   ln_atrL = na, var line   ln_atrS = na
+var line   ln_pL   = na, var line   ln_pS   = na
+var line   ln_chL  = na, var line   ln_chS  = na
+var line   ln_swL  = na, var line   ln_swS  = na
+var label  lb_atrL = na, var label  lb_atrS = na
+var label  lb_pL   = na, var label  lb_pS   = na
+var label  lb_chL  = na, var label  lb_chS  = na
+var label  lb_swL  = na, var label  lb_swS  = na
+var box    bx_zone = na
+
+f_drawLine(oldLn, show, pr, dir, col, opac) =>
+    line.delete(oldLn)
+    line newLn = na
+    if show and not na(pr)
+        stl = dir == "L" ? line.style_dotted : line.style_dashed
+        newLn := line.new(bar_index, pr, bar_index + lineLen, pr,
+             color = f_col(col, opac), style = stl, width = 2)
+    newLn
+
+// Label draws at labelY (may differ from priceY after anti-overlap resolution).
+// A short leader line connects labelY back to the actual SL price.
+f_drawLabel(oldLb, show, priceY, labelY, txt, col, opac) =>
+    label.delete(oldLb)
+    label newLb = na
+    if show and showLabels and not na(priceY)
+        newLb := label.new(bar_index + lineLen, labelY, txt + "  " + str.tostring(priceY, format.mintick),
+             xloc      = xloc.bar_index,
+             style     = label.style_label_left,
+             color     = f_col(col, opac + 20),
+             textcolor = headerText,
+             size      = labelFont)
+    newLb
+
+// ── ANTI-OVERLAP RESOLVER ──
+// Sort visible labels by price; whenever two adjacent labels are within
+// minGap ATR units, nudge the later one further in its direction so their
+// text no longer stacks. Returns a map of adjusted Y per method.
+f_resolveOverlap(float[] prices, bool[] visible, float minGap) =>
+    n = array.size(prices)
+    // Build a working copy of adjusted Y values.
+    adj = array.copy(prices)
+    // Build index array sorted by price ascending (only visible items matter).
+    idxs = array.new<int>()
+    for i = 0 to n - 1
+        if array.get(visible, i) and not na(array.get(prices, i))
+            array.push(idxs, i)
+    // Sort idxs by their price.
+    if array.size(idxs) > 1
+        for i = 0 to array.size(idxs) - 2
+            for j = 0 to array.size(idxs) - i - 2
+                a = array.get(idxs, j)
+                b = array.get(idxs, j + 1)
+                if array.get(adj, a) > array.get(adj, b)
+                    array.set(idxs, j, b)
+                    array.set(idxs, j + 1, a)
+        // Walk sorted list low→high; push overlapping labels UP.
+        for k = 1 to array.size(idxs) - 1
+            prev = array.get(idxs, k - 1)
+            cur  = array.get(idxs, k)
+            gap  = array.get(adj, cur) - array.get(adj, prev)
+            if gap < minGap
+                array.set(adj, cur, array.get(adj, prev) + minGap)
+    adj
+
+// Price arrays (fixed order: 0=ATR-L, 1=P-L, 2=Ch-L, 3=Sw-L, 4=ATR-S, 5=P-S, 6=Ch-S, 7=Sw-S)
+pricesAll  = array.from(atrSL_L, pSL_L, chSL_L, swSL_L, atrSL_S, pSL_S, chSL_S, swSL_S)
+visibleAll = array.from(useATR and showLong, useP and showLong, useCh and showLong, useSw and showLong,
+                         useATR and showShort, useP and showShort, useCh and showShort, useSw and showShort)
+// Minimum vertical gap between label Y positions — based on visible chart
+// RANGE, not ATR. Chart range scales with zoom and is proportional to
+// label pixel height, so this gap is consistent across all timeframes
+// and zoom levels. 4.5% of the 500-bar visible range leaves a small
+// but visible space between stacked label boxes in tight clusters.
+visHigh   = ta.highest(high, 500)
+visLow    = ta.lowest(low,  500)
+minLblGap = (visHigh - visLow) * 0.045
+adjustedY = f_resolveOverlap(pricesAll, visibleAll, minLblGap)
+
+if barstate.islast
+    // LONG lines (drawn at real SL price)
+    ln_atrL := f_drawLine(ln_atrL, useATR and showLong, atrSL_L, "L", atrCol, longOpacity)
+    ln_pL   := f_drawLine(ln_pL,   useP   and showLong, pSL_L,   "L", pCol,   longOpacity)
+    ln_chL  := f_drawLine(ln_chL,  useCh  and showLong, chSL_L,  "L", chCol,  longOpacity)
+    ln_swL  := f_drawLine(ln_swL,  useSw  and showLong, swSL_L,  "L", swCol,  longOpacity)
+    // SHORT lines
+    ln_atrS := f_drawLine(ln_atrS, useATR and showShort, atrSL_S, "S", atrCol, shortOpacity)
+    ln_pS   := f_drawLine(ln_pS,   useP   and showShort, pSL_S,   "S", pCol,   shortOpacity)
+    ln_chS  := f_drawLine(ln_chS,  useCh  and showShort, chSL_S,  "S", chCol,  shortOpacity)
+    ln_swS  := f_drawLine(ln_swS,  useSw  and showShort, swSL_S,  "S", swCol,  shortOpacity)
+
+    // LONG labels (Y resolved to avoid overlap; still shows true SL price in text)
+    lb_atrL := f_drawLabel(lb_atrL, useATR and showLong, atrSL_L, array.get(adjustedY, 0), "ATR-SL L",   atrCol, longOpacity)
+    lb_pL   := f_drawLabel(lb_pL,   useP   and showLong, pSL_L,   array.get(adjustedY, 1), "Pivot-SL L", pCol,   longOpacity)
+    lb_chL  := f_drawLabel(lb_chL,  useCh  and showLong, chSL_L,  array.get(adjustedY, 2), "Chand-SL L", chCol,  longOpacity)
+    lb_swL  := f_drawLabel(lb_swL,  useSw  and showLong, swSL_L,  array.get(adjustedY, 3), "Swing-SL L", swCol,  longOpacity)
+    // SHORT labels
+    lb_atrS := f_drawLabel(lb_atrS, useATR and showShort, atrSL_S, array.get(adjustedY, 4), "ATR-SL S",   atrCol, shortOpacity)
+    lb_pS   := f_drawLabel(lb_pS,   useP   and showShort, pSL_S,   array.get(adjustedY, 5), "Pivot-SL S", pCol,   shortOpacity)
+    lb_chS  := f_drawLabel(lb_chS,  useCh  and showShort, chSL_S,  array.get(adjustedY, 6), "Chand-SL S", chCol,  shortOpacity)
+    lb_swS  := f_drawLabel(lb_swS,  useSw  and showShort, swSL_S,  array.get(adjustedY, 7), "Swing-SL S", swCol,  shortOpacity)
+
+    // ── RISK ZONE (between close and best-method SL on dominant side) ──
+    // Starts at current bar (no past extension) for a cleaner S/R-style zone.
+    box.delete(bx_zone)
+    if showZone and bestIdx >= 0
+        bestSL_L = bestIdx == 0 ? atrSL_L : bestIdx == 1 ? pSL_L : bestIdx == 2 ? chSL_L : swSL_L
+        bestSL_S = bestIdx == 0 ? atrSL_S : bestIdx == 1 ? pSL_S : bestIdx == 2 ? chSL_S : swSL_S
+        bestCol  = bestIdx == 0 ? atrCol  : bestIdx == 1 ? pCol   : bestIdx == 2 ? chCol  : swCol
+        zTop = isBull ? close : bestSL_S
+        zBot = isBull ? bestSL_L : close
+        if not na(zTop) and not na(zBot) and zTop > zBot
+            bx_zone := box.new(bar_index, zTop, bar_index + lineLen, zBot,
+                 border_color = f_col(bestCol, 25),
+                 bgcolor      = f_col(bestCol, 85),
+                 border_width = 1)
+
+// ═════════════════════════════════════════════════
+// PANEL
+// ═════════════════════════════════════════════════
+
+f_pos(p) =>
+    p == "Top Right"     ? position.top_right     :
+     p == "Top Left"      ? position.top_left      :
+     p == "Middle Right"  ? position.middle_right  :
+     p == "Middle Left"   ? position.middle_left   :
+     p == "Bottom Right"  ? position.bottom_right  :
+     position.bottom_left
+
+var table pnl = na
+
+// Helper: combined "price (dist%)" string for compact 4-column layout
+f_slCombo(sl) =>
+    na(sl) or close == 0 ? "—" : str.tostring(sl, format.mintick) + "  (" + str.tostring(math.abs((close - sl) / close * 100.0), "#.##") + "%)"
+
+// Helper: hold-rate formatter
+f_rateStr(r) => na(r) or r < 0 ? "—" : str.tostring(r, "#.#") + "%"
+
+if barstate.islast and showPanel
+    table.delete(pnl)
+    pnl := table.new(f_pos(panelPos), 4, 7,
+         bgcolor     = panelBgUse,
+         border_color = panelBorderUse,
+         border_width = 1,
+         frame_color  = panelBorderUse,
+         frame_width  = 1)
+
+    // Row 0 — merged blue header across all 4 columns
+    table.cell(pnl, 0, 0, "AG Pro Stop Loss Optimizer",
+         bgcolor = headerBg, text_color = headerText, text_size = panelFont)
+    table.merge_cells(pnl, 0, 0, 3, 0)
+
+    // Row 1 — column headers (compact)
+    hdrs = array.from("Method", "LONG  (dist)", "SHORT  (dist)", "Hold Rate")
+    for i = 0 to 3
+        table.cell(pnl, i, 1, array.get(hdrs, i),
+             bgcolor = panelBgUse, text_color = panelLabelUse, text_size = panelFont)
+
+    // Row 2 — ATR-SL
+    atrMark = bestIdx == 0 ? " ⭐" : ""
+    table.cell(pnl, 0, 2, "ATR-SL" + atrMark, bgcolor = panelBgUse, text_color = atrCol, text_size = panelFont)
+    table.cell(pnl, 1, 2, useATR ? f_slCombo(atrSL_L) : "off", bgcolor = panelBgUse, text_color = panelValueUse, text_size = panelFont)
+    table.cell(pnl, 2, 2, useATR ? f_slCombo(atrSL_S) : "off", bgcolor = panelBgUse, text_color = panelValueUse, text_size = panelFont)
+    table.cell(pnl, 3, 2, useATR ? f_rateStr(hr_atr) : "—",    bgcolor = panelBgUse, text_color = panelValueUse, text_size = panelFont)
+
+    // Row 3 — Pivot-SL
+    pMark = bestIdx == 1 ? " ⭐" : ""
+    table.cell(pnl, 0, 3, "Pivot-SL" + pMark, bgcolor = panelBgUse, text_color = pCol, text_size = panelFont)
+    table.cell(pnl, 1, 3, useP ? f_slCombo(pSL_L) : "off", bgcolor = panelBgUse, text_color = panelValueUse, text_size = panelFont)
+    table.cell(pnl, 2, 3, useP ? f_slCombo(pSL_S) : "off", bgcolor = panelBgUse, text_color = panelValueUse, text_size = panelFont)
+    table.cell(pnl, 3, 3, useP ? f_rateStr(hr_p) : "—",    bgcolor = panelBgUse, text_color = panelValueUse, text_size = panelFont)
+
+    // Row 4 — Chand-SL
+    chMark = bestIdx == 2 ? " ⭐" : ""
+    table.cell(pnl, 0, 4, "Chand-SL" + chMark, bgcolor = panelBgUse, text_color = chCol, text_size = panelFont)
+    table.cell(pnl, 1, 4, useCh ? f_slCombo(chSL_L) : "off", bgcolor = panelBgUse, text_color = panelValueUse, text_size = panelFont)
+    table.cell(pnl, 2, 4, useCh ? f_slCombo(chSL_S) : "off", bgcolor = panelBgUse, text_color = panelValueUse, text_size = panelFont)
+    table.cell(pnl, 3, 4, useCh ? f_rateStr(hr_ch) : "—",    bgcolor = panelBgUse, text_color = panelValueUse, text_size = panelFont)
+
+    // Row 5 — Swing-SL
+    swMark = bestIdx == 3 ? " ⭐" : ""
+    table.cell(pnl, 0, 5, "Swing-SL" + swMark, bgcolor = panelBgUse, text_color = swCol, text_size = panelFont)
+    table.cell(pnl, 1, 5, useSw ? f_slCombo(swSL_L) : "off", bgcolor = panelBgUse, text_color = panelValueUse, text_size = panelFont)
+    table.cell(pnl, 2, 5, useSw ? f_slCombo(swSL_S) : "off", bgcolor = panelBgUse, text_color = panelValueUse, text_size = panelFont)
+    table.cell(pnl, 3, 5, useSw ? f_rateStr(hr_sw) : "—",    bgcolor = panelBgUse, text_color = panelValueUse, text_size = panelFont)
+
+    // Row 6 — Trend context footer (merged across all 4 columns)
+    trendTxt = isBull ? "Trend: Bullish (EMA50)" : "Trend: Bearish (EMA50)"
+    trendCol = isBull ? bullColor : bearColor
+    table.cell(pnl, 0, 6, trendTxt, bgcolor = panelBgUse, text_color = trendCol, text_size = panelFont)
+    table.merge_cells(pnl, 0, 6, 3, 6)
+
+// ═════════════════════════════════════════════════
+// ALERTS
+// ═════════════════════════════════════════════════
+
+alertcondition(ta.crossunder(low, atrSL_L), title = "Price breached ATR-SL (Long)",   message = "Stop Loss Optimizer: Price breached ATR-SL long level.")
+alertcondition(ta.crossover(high,  atrSL_S), title = "Price breached ATR-SL (Short)",  message = "Stop Loss Optimizer: Price breached ATR-SL short level.")
+alertcondition(ta.crossunder(low,  chSL_L),  title = "Price breached Chand-SL (Long)", message = "Stop Loss Optimizer: Price breached Chandelier-SL long level.")
+alertcondition(ta.crossover(high,  chSL_S),  title = "Price breached Chand-SL (Short)",message = "Stop Loss Optimizer: Price breached Chandelier-SL short level.")
